@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>رأيك في مقاطع دبدوب</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column of short questions, phone first; answers become one message the parent sends. */
+:root {
+  --bg: #f3f0ea; --panel: #fffdf9; --fg: #2b2118; --muted: #6f6257;
+  --line: #e0d8cc; --accent: #c2622d; --accent-fg: #fff; --chip: #f6efe5; --ok: #2f7d4f;
+  --display: "Baloo Bhaijaan 2", "Segoe UI", Tahoma, sans-serif;
+  --body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #1b1713; --panel: #26201a; --fg: #f1e9df; --muted: #b3a595; --line: #3a3128;
+    --accent: #e58a4f; --accent-fg: #1b1713; --chip: #2f2720; --ok: #6cc592; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.65 var(--body); -webkit-tap-highlight-color: transparent; }
+main { max-width: 620px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+h1 { font: 700 28px/1.25 var(--display); margin: 0; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); }
+.family { align-self: flex-start; background: var(--chip); border-radius: 999px; padding: 2px 12px; font-size: 13.5px; font-weight: 600; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+section > h2 { font: 700 19px/1.3 var(--display); margin: 0; }
+fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+legend { font-weight: 600; padding: 0; margin-bottom: 8px; }
+legend small { font-weight: 400; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips label { position: relative; }
+.chips input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chips span { display: block; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--chip); font-size: 15px; }
+.chips input:checked + span { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.chips input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pick label { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; border-radius: 14px;
+  border: 2px solid var(--line); background: var(--chip); font-size: 14px; font-weight: 600; cursor: pointer; }
+.pick input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.pick canvas { width: 100%; aspect-ratio: 5 / 4; border-radius: 10px; display: block; }
+.pick label:has(input:checked) { border-color: var(--accent); background: transparent; }
+.pick label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+input[type=text], textarea { width: 100%; font: 16px var(--body); color: var(--fg); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+textarea { min-height: 90px; resize: vertical; }
+input[type=text]:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.send { display: flex; flex-direction: column; gap: 10px; }
+.btn { display: block; text-align: center; text-decoration: none; font: 600 17px var(--body); border-radius: 14px; padding: 14px;
+  border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; width: 100%; }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+#done { color: var(--ok); font-weight: 600; margin: 0; min-height: 1.6em; }
+.privacy { font-size: 13.5px; color: var(--muted); margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>رأيك في مقاطع دبدوب</h1>
+    <p class="lead">شكرًا إنك فرّجت طفلك على المقاطع. الأسئلة دي بتاخد دقيقتين، وإجاباتك هتساعدنا نعرف الفكرة بتنفع الأطفال ولا لأ.</p>
+    <span class="family" id="family" hidden></span>
+  </header>
+  <form id="form" novalidate></form>
+  <section class="send">
+    <h2>ابعت الإجابات</h2>
+    <a class="btn primary" id="wa" href="#" target="_blank" rel="noopener">ابعت على واتساب</a>
+    <button class="btn" type="button" id="share" hidden>ابعت بطريقة تانية</button>
+    <button class="btn" type="button" id="copy">انسخ الإجابات</button>
+    <p id="done" role="status"></p>
+    <p class="privacy">مش بنسأل عن اسم الطفل ولا صوره. الإجابات بتتبعت كرسالة منك انت، ومش بتتحفظ على أي سيرفر.</p>
+  </section>
+</main>
+
+<script>
+/* Original characters, drawn on a 2D canvas. Shared by the tool and the feedback page. */
+const CHARS = {
+  bear:   { name: "دبدوب",  fur: "#b5763c", dark: "#8f5a2a", cream: "#f3dcb8", ears: "round", noseColor: "#2b1a10" },
+  cat:    { name: "بسبوسة", fur: "#e7a052", dark: "#bf7428", cream: "#fdebd3", ears: "cat", inner: "#f2a7b4",
+            noseColor: "#e3768c", nose: [22, 15], muzzle: [100, 78], whiskers: true, stripes: true, iris: "#6fb34e" },
+  rabbit: { name: "أرنوب",  fur: "#ece7f1", dark: "#b9aec6", cream: "#ffffff", ears: "rabbit", inner: "#f4b3c0",
+            noseColor: "#e3768c", nose: [20, 14], muzzle: [96, 76], whiskers: true, teeth: true, scale: 0.8, yOff: 70 },
+  lion:   { name: "أسدو",   fur: "#f2c14e", dark: "#c8901f", cream: "#fce9b8", ears: "round", inner: "#d99a2b",
+            noseColor: "#5a3214", nose: [34, 24], mane: "#d0682b", scale: 0.88, yOff: 18 },
+};
+const CHAR_KEYS = ["bear", "cat", "rabbit", "lion"];
+const NEUTRAL_POSE = { yaw: 0, pitch: 0, roll: 0, dx: 0, dy: 0, jaw: 0, smile: 0.45, pucker: 0, blinkL: 0, blinkR: 0, brow: 0 };
+
+function drawCharacter(ctx, w, h, t, pose, key, bg) {
+  const ch = CHARS[key] || CHARS.bear;
+  const INK = "#2b1a10";
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const E = (x, y, rx, ry, fill, rot = 0) => {
+    ctx.beginPath(); ctx.ellipse(x, y, Math.max(rx, 0.1), Math.max(ry, 0.1), rot, 0, Math.PI * 2);
+    ctx.fillStyle = fill; ctx.fill();
+  };
+  const tri = (a, b, c, d, e, f, fill) => {
+    ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.lineTo(e, f); ctx.closePath();
+    ctx.fillStyle = fill; ctx.lineJoin = "round"; ctx.fill();
+  };
+
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+  const u = Math.min(w, h) / 720, s = ch.scale || 1;
+  const cx = w / 2 + pose.dx * 120 * u, cy = h / 2 + (10 + (ch.yOff || 0)) * u + pose.dy * 80 * u;
+  const breathe = Math.sin(t / 900) * 4 * u, bx = cx - pose.dx * 40 * u;
+
+  // body
+  E(bx, h + 40 * u, 300 * u, 230 * u + breathe, ch.fur);
+  E(bx, h + 60 * u, 180 * u, 170 * u + breathe, ch.cream);
+
+  ctx.save();
+  ctx.translate(cx, cy); ctx.rotate(pose.roll); ctx.scale(u * s, u * s);
+  const px = pose.yaw * 34, py = pose.pitch * 26;
+
+  // mane (lion)
+  if (ch.mane) {
+    ctx.beginPath();
+    const n = 22;
+    for (let i = 0; i <= n * 2; i++) {
+      const a = (i / (n * 2)) * Math.PI * 2, r = i % 2 ? 296 : 348;
+      const x = Math.cos(a) * r - px * 0.4, y = Math.sin(a) * r * 0.95 - py * 0.3;
+      if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    }
+    ctx.closePath(); ctx.fillStyle = ch.mane; ctx.fill();
+  }
+
+  // ears
+  for (const side of [-1, 1]) {
+    const ox = -px * 0.6, oy = -py * 0.5;
+    if (ch.ears === "round") {
+      E(side * 170 + ox, -185 + oy, 78, 78, ch.fur);
+      E(side * 170 + ox, -179 + oy, 44, 44, ch.inner || ch.dark);
+    } else if (ch.ears === "cat") {
+      tri(side * 80 + ox, -170 + oy, side * 238 + ox, -118 + oy, side * 205 + ox, -308 + oy, ch.fur);
+      tri(side * 118 + ox, -168 + oy, side * 208 + ox, -140 + oy, side * 193 + ox, -258 + oy, ch.inner);
+    } else if (ch.ears === "rabbit") {
+      E(side * 95 + ox, -330 + oy, 55, 160, ch.fur, side * 0.16);
+      E(side * 95 + ox, -320 + oy, 28, 118, ch.inner, side * 0.16);
+    }
+  }
+
+  // head
+  E(0, 0, 250, 228, ch.fur);
+
+  // forehead stripes (cat)
+  if (ch.stripes) {
+    ctx.lineWidth = 12; ctx.lineCap = "round"; ctx.strokeStyle = ch.dark;
+    for (const k of [-1, 0, 1]) {
+      ctx.beginPath(); ctx.moveTo(k * 36 + px * 0.5, -212 + py * 0.3); ctx.lineTo(k * 30 + px * 0.5, -160 + py * 0.3); ctx.stroke();
+    }
+  }
+
+  // cheeks
+  E(-150 + px * 0.8, 60 + py, 38, 24, "rgba(233,135,154,.45)");
+  E(150 + px * 0.8, 60 + py, 38, 24, "rgba(233,135,154,.45)");
+
+  // eyes + brows
+  const eyeY = -48 + py;
+  for (const [ox, blink] of [[-92, pose.blinkL], [92, pose.blinkR]]) {
+    const x = ox + px, open = clamp(1 - blink, 0.06, 1);
+    const gx = x + pose.yaw * 8, gy = eyeY + pose.pitch * 6;
+    E(x, eyeY, 34, 38 * open, "#fff");
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(43,26,16,.3)"; ctx.stroke();
+    if (ch.iris) {
+      E(gx, gy, 23, Math.min(25, 38 * open), ch.iris);
+      E(gx, gy, 9, Math.min(20, 34 * open), INK);
+    } else {
+      E(gx, gy, 20, Math.min(22, 38 * open), INK);
+    }
+    if (open > 0.5) E(gx + 7, gy - 8, 6, 6, "#fff");
+    ctx.beginPath();
+    const by = eyeY - 62 - pose.brow * 16, tilt = Math.sign(ox) * pose.brow * 6;
+    ctx.moveTo(x - 30, by + tilt); ctx.quadraticCurveTo(x, by - 12, x + 30, by - tilt);
+    ctx.lineWidth = 11; ctx.lineCap = "round"; ctx.strokeStyle = ch.dark; ctx.stroke();
+  }
+
+  // muzzle
+  const [mrx, mry] = ch.muzzle || [118, 92];
+  const mx = px * 1.25, my = 70 + py * 1.2;
+  E(mx, my + pose.jaw * 14, mrx, mry + pose.jaw * 22, ch.cream);
+
+  // nose
+  const [nw, nh] = ch.nose || [38, 27];
+  E(mx, my - 42, nw, nh, ch.noseColor);
+  E(mx - nw * 0.26, my - 42 - nh * 0.3, nw * 0.26, nh * 0.22, "rgba(255,255,255,.35)");
+  ctx.beginPath(); ctx.moveTo(mx, my - 42 + nh * 0.6); ctx.lineTo(mx, my + 2);
+  ctx.lineWidth = 6; ctx.strokeStyle = INK; ctx.lineCap = "round"; ctx.stroke();
+
+  // whiskers
+  if (ch.whiskers) {
+    ctx.lineWidth = 4; ctx.strokeStyle = "rgba(43,26,16,.5)";
+    for (const side of [-1, 1]) for (let k = 0; k < 3; k++) {
+      ctx.beginPath();
+      ctx.moveTo(mx + side * mrx * 0.6, my - 16 + k * 14);
+      ctx.lineTo(mx + side * (mrx + 85), my - 38 + k * 24);
+      ctx.stroke();
+    }
+  }
+
+  // mouth
+  const half = 58 * (mrx / 118) * (1 + 0.35 * pose.smile - 0.5 * pose.pucker);
+  const lipY = my + 6, lift = pose.smile * 20, open = pose.jaw * 78 + pose.pucker * 14;
+  const teeth = (y) => {
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = INK; ctx.lineWidth = 3;
+    for (const x0 of [mx - 15, mx + 1]) { ctx.beginPath(); ctx.rect(x0, y, 14, 20); ctx.fill(); ctx.stroke(); }
+  };
+  ctx.beginPath();
+  ctx.moveTo(mx - half, lipY - lift);
+  ctx.quadraticCurveTo(mx, lipY + 16 + lift * 0.5, mx + half, lipY - lift);
+  ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.lineJoin = "round"; ctx.lineCap = "round";
+  if (open > 5) {
+    ctx.quadraticCurveTo(mx + half * 0.9, lipY + open + 12, mx, lipY + open + 18);
+    ctx.quadraticCurveTo(mx - half * 0.9, lipY + open + 12, mx - half, lipY - lift);
+    ctx.closePath(); ctx.fillStyle = "#5a1f1f"; ctx.fill();
+    ctx.stroke();
+    ctx.save(); ctx.clip();
+    E(mx, lipY + open + 14, half * 0.62, open * 0.5, "#e9879a");
+    if (ch.teeth) teeth(lipY + 2);
+    ctx.restore();
+  } else {
+    ctx.stroke();
+    if (ch.teeth) teeth(lipY + 9);
+  }
+  ctx.restore();
+}
+
+</script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const family = (params.get("f") || "").slice(0, 20);
+const to = (params.get("to") || "").replace(/\D/g, "").slice(0, 15);
+if (family) { $("family").hidden = false; $("family").textContent = "رقم الأسرة: " + family; }
+
+const WATCHED = ["كله", "أكتر من النص", "أقل من النص", "ماتفرجش عليه"];
+const REACT = ["ضحك أو ابتسم", "رد بالكلام", "قلّد الأصوات أو الحركات", "طلب يشوفه تاني", "ماتفاعلش"];
+const WORDS = ["ولا كلمة", "1 أو 2", "3 أو 4", "5 أو 6"];
+const clip = (n, title) => ({ title: `المقطع ${n}: ${title}`, qs: [
+  { id: `w${n}`, label: "اتفرج قد إيه؟", type: "radio", opts: WATCHED },
+  { id: `r${n}`, label: "عمل إيه وهو بيتفرج؟", hint: "اختار كل اللي حصل", type: "check", opts: REACT },
+]});
+const SECTIONS = [
+  { title: "عن طفلك", qs: [
+    { id: "age", label: "عمره كام سنة؟", type: "radio", opts: ["أقل من 3", "3 أو 4", "5 أو 6", "7 أو 8", "أكبر من 8"] },
+    { id: "speech", label: "كلامه حاليًا عامل إزاي؟", hint: "اختياري", type: "radio", opts: ["كويس لسنه", "فيه تأخير بسيط", "فيه تأخير واضح", "مش متأكد"] },
+  ]},
+  clip(1, "تعارف"),
+  clip(2, "حكاية المزرعة"),
+  { title: "المقطع 3: قول ورايا", qs: [
+    { id: "w3", label: "اتفرج على نسخة الشخصية قد إيه؟", type: "radio", opts: WATCHED },
+    { id: "words_char", label: "قال كام كلمة ورا الشخصية؟", type: "radio", opts: WORDS },
+    { id: "words_real", label: "وقال كام كلمة ورا النسخة اللي فيها الشخص الحقيقي؟", type: "radio", opts: [...WORDS, "ماتفرجش عليها"] },
+    { id: "prefer", label: "اتفاعل أكتر مع أنهي نسخة؟", type: "radio", opts: ["الشخصية", "الشخص الحقيقي", "زي بعض", "ماشافش الاتنين"] },
+  ]},
+  { title: "الشخصية المفضلة", qs: [
+    { id: "fav", label: "ورّي طفلك الشخصيات دي وخليه يختار اللي بيحبها", type: "pick" },
+  ]},
+  { title: "رأيك انت", qs: [
+    { id: "would", label: "تحب طفلك يحضر جلسات تخاطب أو تنمية مهارات أونلاين مع أخصائي بالطريقة دي؟", type: "radio", opts: ["أيوه", "ممكن", "لأ"] },
+    { id: "price", label: "إيه السعر المناسب للجلسة في رأيك؟", hint: "اكتب العملة، مثلًا 100 درهم", type: "text" },
+    { id: "note", label: "أي ملاحظة تانية؟", hint: "إيه اللي عجبه أو ضايقه", type: "area" },
+  ]},
+];
+
+/* build the form */
+const form = $("form");
+const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+for (const sec of SECTIONS) {
+  const s = el("section", {}, el("h2", { textContent: sec.title }));
+  for (const q of sec.qs) {
+    const fs = el("fieldset");
+    fs.dataset.id = q.id;
+    const lg = el("legend", { textContent: q.label + " " });
+    if (q.hint) lg.append(el("small", { textContent: `(${q.hint})` }));
+    fs.append(lg);
+    if (q.type === "radio" || q.type === "check") {
+      const box = el("div", { className: "chips" });
+      for (const o of q.opts) box.append(el("label", {}, el("input", { type: q.type === "radio" ? "radio" : "checkbox", name: q.id, value: o }), el("span", { textContent: o })));
+      fs.append(box);
+    } else if (q.type === "pick") {
+      const box = el("div", { className: "pick" });
+      for (const key of CHAR_KEYS) {
+        const c = el("canvas", { width: 200, height: 160 });
+        drawCharacter(c.getContext("2d"), 200, 160, 0, NEUTRAL_POSE, key, "#bfe3f2");
+        box.append(el("label", {}, el("input", { type: "radio", name: q.id, value: CHARS[key].name, "aria-label": CHARS[key].name }), c, el("span", { textContent: CHARS[key].name })));
+      }
+      fs.append(box);
+    } else if (q.type === "text") {
+      fs.append(el("input", { type: "text", name: q.id, id: "q-" + q.id, maxLength: 60 }));
+    } else {
+      fs.append(el("textarea", { name: q.id, id: "q-" + q.id, maxLength: 600 }));
+    }
+    s.append(fs);
+  }
+  form.append(s);
+}
+
+/* turn answers into one message */
+function summary() {
+  const lines = ["إجابات استمارة دبدوب"];
+  if (family) lines.push("رقم الأسرة: " + family);
+  let answered = 0;
+  for (const sec of SECTIONS) {
+    const part = [];
+    for (const q of sec.qs) {
+      let v;
+      if (q.type === "check") v = [...form.querySelectorAll(`input[name="${q.id}"]:checked`)].map((i) => i.value).join("، ");
+      else if (q.type === "radio" || q.type === "pick") { const i = form.querySelector(`input[name="${q.id}"]:checked`); v = i ? i.value : ""; }
+      else v = form.elements[q.id].value.trim();
+      if (v) { part.push(`- ${q.label} ${v}`); answered++; }
+    }
+    if (part.length) lines.push("", "*" + sec.title + "*", ...part);
+  }
+  return { text: lines.join("\n"), answered };
+}
+function refresh() {
+  const { text } = summary();
+  $("wa").href = "https://wa.me/" + to + "?text=" + encodeURIComponent(text);
+}
+form.addEventListener("input", refresh);
+form.addEventListener("change", refresh);
+refresh();
+
+$("wa").addEventListener("click", (e) => {
+  if (!summary().answered) { e.preventDefault(); $("done").textContent = "جاوب على سؤال واحد على الأقل الأول."; return; }
+  $("done").textContent = "اتفتح واتساب. دوس إرسال هناك.";
+});
+if (navigator.share) $("share").hidden = false;
+$("share").onclick = () => {
+  const { text, answered } = summary();
+  if (!answered) { $("done").textContent = "جاوب على سؤال واحد على الأقل الأول."; return; }
+  navigator.share({ text }).catch(() => {});
+};
+$("copy").onclick = async () => {
+  const { text, answered } = summary();
+  if (!answered) { $("done").textContent = "جاوب على سؤال واحد على الأقل الأول."; return; }
+  try { await navigator.clipboard.writeText(text); $("done").textContent = "اتنسخت. الصقها في رسالة وابعتها."; }
+  catch (e) { $("done").textContent = "ماقدرتش أنسخ. استخدم زرار واتساب."; }
+};
+</script>
+</body>
+</html>
